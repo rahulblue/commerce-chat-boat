@@ -1,0 +1,18 @@
+application:
+  actions: actions
+  web: client
+
+  runtimes:
+    actions:
+      chat:
+        function: actions/chat/index.js
+        web: 'yes'
+        runtime: 'nodejs:18'
+        annotations:
+          require-adobe-auth: false
+        inputs:
+          ANTHROPIC_API_KEY: $ANTHROPIC_API_KEY
+          ANTHROPIC_MODEL: $ANTHROPIC_MODEL
+          ADOBE_COMMERCE_BASE_URL: $ADOBE_COMMERCE_BASE_URL
+          ADOBE_COMMERCE_REST_PREFIX: $ADOBE_COMMERCE_REST_PREFIX
+          ADOBE_COMMERCE_ADMIN_TOKEN: $ADOBE_COMMERCE_ADMIN_TOKEN

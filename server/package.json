@@ -1,0 +1,18 @@
+{
+  "name": "@commerce-admin-chatbot/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "check": "node --check src/index.js && node --check src/chat/orchestrator.js && node --check src/chat/intentRouter.js && node --check src/commerce/commerceTools.js && node --check src/commerce/adobeCommerceClient.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2"
+  }
+}
