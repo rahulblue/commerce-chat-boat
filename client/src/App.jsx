@@ -2,7 +2,18 @@ import { Bot, Loader2, LogOut, Send, UserRound } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+// Local Express dev server uses clean REST paths under API_BASE. Deployed Adobe I/O Runtime
+// actions each have their own flat URL (no shared base path structure), so every endpoint
+// has its own override var — set these to the real action URLs after the first `aio app deploy`.
 const CHAT_URL = import.meta.env.VITE_CHAT_API_URL || `${API_BASE}/api/chat`;
+const HEALTH_URL = import.meta.env.VITE_HEALTH_URL || `${API_BASE}/api/health`;
+const ME_URL = import.meta.env.VITE_ME_URL || `${API_BASE}/api/auth/me`;
+const LOGIN_URL = import.meta.env.VITE_LOGIN_URL || `${API_BASE}/api/auth/login`;
+const LOGOUT_URL = import.meta.env.VITE_LOGOUT_URL || `${API_BASE}/api/auth/logout`;
+const CHAT_HISTORY_URL = import.meta.env.VITE_CHAT_HISTORY_URL || `${API_BASE}/api/chat/history`;
+// Set VITE_AUTH_REQUIRED=true for the App Builder client build — Commerce is always configured
+// there, so skip the /api/health probe entirely rather than depend on a 6th action for it.
+const FORCE_AUTH_REQUIRED = import.meta.env.VITE_AUTH_REQUIRED === "true";
 
 const suggestedQuestions = [
   "Show recent orders",
@@ -40,15 +51,17 @@ export default function App() {
 
   async function checkAuth() {
     try {
-      const healthRes = await fetch(`${API_BASE}/api/health`);
-      const health = await healthRes.json();
+      if (!FORCE_AUTH_REQUIRED) {
+        const healthRes = await fetch(HEALTH_URL);
+        const health = await healthRes.json();
 
-      if (!health.authRequired) {
-        setAuthState("anonymous");
-        return;
+        if (!health.authRequired) {
+          setAuthState("anonymous");
+          return;
+        }
       }
 
-      const meRes = await fetch(`${API_BASE}/api/auth/me`, { credentials: "include" });
+      const meRes = await fetch(ME_URL, { credentials: "include" });
 
       if (!meRes.ok) {
         setAuthState("needs-login");
@@ -66,7 +79,7 @@ export default function App() {
 
   async function loadHistory() {
     try {
-      const res = await fetch(`${API_BASE}/api/chat/history`, { credentials: "include" });
+      const res = await fetch(CHAT_HISTORY_URL, { credentials: "include" });
 
       if (!res.ok) {
         return;
@@ -88,7 +101,7 @@ export default function App() {
     setIsLoggingIn(true);
 
     try {
-      const res = await fetch(`${API_BASE}/api/auth/login`, {
+      const res = await fetch(LOGIN_URL, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -114,7 +127,7 @@ export default function App() {
 
   async function handleLogout() {
     try {
-      await fetch(`${API_BASE}/api/auth/logout`, { method: "POST", credentials: "include" });
+      await fetch(LOGOUT_URL, { method: "POST", credentials: "include" });
     } catch (error) {
       // Clear local state regardless of network failure.
     }

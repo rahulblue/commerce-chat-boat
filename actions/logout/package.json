@@ -1,9 +1,8 @@
 {
-  "name": "commerce-admin-chatbot-chat-action",
+  "name": "commerce-admin-chatbot-logout-action",
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.39.0",
     "@adobe/aio-lib-state": "^5.0.0"
   }
 }

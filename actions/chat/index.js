@@ -1,61 +1,84 @@
+import { applyEnvInputs } from "../lib/env.js";
+import { buildCorsHeaders, getRequestOrigin } from "../lib/cors.js";
+import { resolveSession } from "../lib/requestSession.js";
+import { appendMessage, getRecentMessages } from "../lib/chatHistoryStore.js";
 import { answerQuestion } from "../../server/src/chat/orchestrator.js";
-
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Content-Type": "application/json",
-};
+import { hasAdobeCommerceConfig } from "../../server/src/commerce/adobeCommerceClient.js";
 
 export async function main(params) {
-  // App Builder passes action inputs as top-level params — inject into process.env
-  // so the existing orchestrator/commerce modules read them via process.env.*
-  if (params.ANTHROPIC_API_KEY)        process.env.ANTHROPIC_API_KEY        = params.ANTHROPIC_API_KEY;
-  if (params.ANTHROPIC_MODEL)          process.env.ANTHROPIC_MODEL          = params.ANTHROPIC_MODEL;
-  if (params.ADOBE_COMMERCE_BASE_URL)  process.env.ADOBE_COMMERCE_BASE_URL  = params.ADOBE_COMMERCE_BASE_URL;
-  if (params.ADOBE_COMMERCE_REST_PREFIX) process.env.ADOBE_COMMERCE_REST_PREFIX = params.ADOBE_COMMERCE_REST_PREFIX;
-  if (params.ADOBE_COMMERCE_ADMIN_TOKEN) process.env.ADOBE_COMMERCE_ADMIN_TOKEN = params.ADOBE_COMMERCE_ADMIN_TOKEN;
+  // App Builder passes action inputs as top-level params — inject into process.env so the
+  // shared server/src modules read them via process.env.* exactly as the Express server does.
+  applyEnvInputs(params);
+  const corsHeaders = buildCorsHeaders(getRequestOrigin(params));
 
-  // Handle CORS preflight
   if (params.__ow_method === "options") {
-    return { statusCode: 200, headers: CORS_HEADERS, body: "{}" };
+    return { statusCode: 200, headers: corsHeaders, body: "{}" };
   }
 
   // Web actions with Content-Type: application/json have the body auto-parsed into params.
   // Fall back to __ow_body (base64) for raw-http mode.
   let question = "";
-  let history = [];
+  let clientHistory = [];
 
   if (params.question !== undefined) {
     question = String(params.question || "").trim();
-    history = Array.isArray(params.history) ? params.history : [];
+    clientHistory = Array.isArray(params.history) ? params.history : [];
   } else if (params.__ow_body) {
     const raw = Buffer.from(params.__ow_body, "base64").toString("utf-8");
     const body = JSON.parse(raw);
     question = String(body.question || "").trim();
-    history = Array.isArray(body.history) ? body.history : [];
+    clientHistory = Array.isArray(body.history) ? body.history : [];
   }
 
   if (!question) {
     return {
       statusCode: 400,
-      headers: CORS_HEADERS,
+      headers: corsHeaders,
       body: JSON.stringify({ error: "Question is required." }),
     };
   }
 
+  let session = null;
+  let setCookieHeader;
+
+  if (hasAdobeCommerceConfig()) {
+    const resolved = await resolveSession(params);
+    session = resolved.session;
+    setCookieHeader = resolved.setCookieHeader;
+
+    if (!session) {
+      return { statusCode: 401, headers: corsHeaders, body: JSON.stringify({ error: "not_authenticated" }) };
+    }
+  }
+
   try {
-    const result = await answerQuestion({ question, history });
+    const history = session ? await getRecentMessages(session.commerceUsername) : clientHistory;
+
+    if (session) {
+      await appendMessage({ commerceUsername: session.commerceUsername, role: "user", content: question });
+    }
+
+    const result = await answerQuestion({ question, history, session });
+
+    if (session) {
+      await appendMessage({
+        commerceUsername: session.commerceUsername,
+        role: "assistant",
+        content: result.answer,
+        toolCalls: result.toolCalls,
+      });
+    }
+
     return {
       statusCode: 200,
-      headers: CORS_HEADERS,
+      headers: setCookieHeader ? { ...corsHeaders, "Set-Cookie": setCookieHeader } : corsHeaders,
       body: JSON.stringify(result),
     };
   } catch (error) {
     console.error("Chat action error:", error);
     return {
       statusCode: 500,
-      headers: CORS_HEADERS,
+      headers: corsHeaders,
       body: JSON.stringify({ error: "Unable to answer the question right now." }),
     };
   }
