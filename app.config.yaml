@@ -2,67 +2,70 @@ application:
   actions: actions
   web: client
 
-  runtimes:
-    actions:
-      chat:
-        function: actions/chat/index.js
-        web: 'yes'
-        runtime: 'nodejs:18'
-        annotations:
-          require-adobe-auth: false
-        inputs:
-          ANTHROPIC_API_KEY: $ANTHROPIC_API_KEY
-          ANTHROPIC_MODEL: $ANTHROPIC_MODEL
-          ADOBE_COMMERCE_BASE_URL: $ADOBE_COMMERCE_BASE_URL
-          ADOBE_COMMERCE_REST_PREFIX: $ADOBE_COMMERCE_REST_PREFIX
-          ADOBE_COMMERCE_ADMIN_TOKEN: $ADOBE_COMMERCE_ADMIN_TOKEN
-          SESSION_SECRET: $SESSION_SECRET
-          COMMERCE_TOKEN_ENC_KEY: $COMMERCE_TOKEN_ENC_KEY
-          SESSION_IDLE_TIMEOUT_MINUTES: $SESSION_IDLE_TIMEOUT_MINUTES
-          CLIENT_ORIGIN: $CLIENT_ORIGIN
-      chatHistory:
-        function: actions/chatHistory/index.js
-        web: 'yes'
-        runtime: 'nodejs:18'
-        annotations:
-          require-adobe-auth: false
-        inputs:
-          ADOBE_COMMERCE_BASE_URL: $ADOBE_COMMERCE_BASE_URL
-          SESSION_SECRET: $SESSION_SECRET
-          COMMERCE_TOKEN_ENC_KEY: $COMMERCE_TOKEN_ENC_KEY
-          SESSION_IDLE_TIMEOUT_MINUTES: $SESSION_IDLE_TIMEOUT_MINUTES
-          CLIENT_ORIGIN: $CLIENT_ORIGIN
-      login:
-        function: actions/login/index.js
-        web: 'yes'
-        runtime: 'nodejs:18'
-        annotations:
-          require-adobe-auth: false
-        inputs:
-          ADOBE_COMMERCE_BASE_URL: $ADOBE_COMMERCE_BASE_URL
-          ADOBE_COMMERCE_REST_PREFIX: $ADOBE_COMMERCE_REST_PREFIX
-          SESSION_SECRET: $SESSION_SECRET
-          COMMERCE_TOKEN_ENC_KEY: $COMMERCE_TOKEN_ENC_KEY
-          SESSION_IDLE_TIMEOUT_MINUTES: $SESSION_IDLE_TIMEOUT_MINUTES
-          CLIENT_ORIGIN: $CLIENT_ORIGIN
-      logout:
-        function: actions/logout/index.js
-        web: 'yes'
-        runtime: 'nodejs:18'
-        annotations:
-          require-adobe-auth: false
-        inputs:
-          SESSION_SECRET: $SESSION_SECRET
-          CLIENT_ORIGIN: $CLIENT_ORIGIN
-      me:
-        function: actions/me/index.js
-        web: 'yes'
-        runtime: 'nodejs:18'
-        annotations:
-          require-adobe-auth: false
-        inputs:
-          ADOBE_COMMERCE_BASE_URL: $ADOBE_COMMERCE_BASE_URL
-          SESSION_SECRET: $SESSION_SECRET
-          COMMERCE_TOKEN_ENC_KEY: $COMMERCE_TOKEN_ENC_KEY
-          SESSION_IDLE_TIMEOUT_MINUTES: $SESSION_IDLE_TIMEOUT_MINUTES
-          CLIENT_ORIGIN: $CLIENT_ORIGIN
+  runtimeManifest:
+    packages:
+      commerce-chatbot:
+        license: Apache-2.0
+        actions:
+          chat:
+            function: actions/chat/index.js
+            web: 'yes'
+            runtime: 'nodejs:18'
+            annotations:
+              require-adobe-auth: false
+            inputs:
+              ANTHROPIC_API_KEY: $ANTHROPIC_API_KEY
+              ANTHROPIC_MODEL: $ANTHROPIC_MODEL
+              ADOBE_COMMERCE_BASE_URL: $ADOBE_COMMERCE_BASE_URL
+              ADOBE_COMMERCE_REST_PREFIX: $ADOBE_COMMERCE_REST_PREFIX
+              ADOBE_COMMERCE_ADMIN_TOKEN: $ADOBE_COMMERCE_ADMIN_TOKEN
+              SESSION_SECRET: $SESSION_SECRET
+              COMMERCE_TOKEN_ENC_KEY: $COMMERCE_TOKEN_ENC_KEY
+              SESSION_IDLE_TIMEOUT_MINUTES: $SESSION_IDLE_TIMEOUT_MINUTES
+              CLIENT_ORIGIN: $CLIENT_ORIGIN
+          chatHistory:
+            function: actions/chatHistory/index.js
+            web: 'yes'
+            runtime: 'nodejs:18'
+            annotations:
+              require-adobe-auth: false
+            inputs:
+              ADOBE_COMMERCE_BASE_URL: $ADOBE_COMMERCE_BASE_URL
+              SESSION_SECRET: $SESSION_SECRET
+              COMMERCE_TOKEN_ENC_KEY: $COMMERCE_TOKEN_ENC_KEY
+              SESSION_IDLE_TIMEOUT_MINUTES: $SESSION_IDLE_TIMEOUT_MINUTES
+              CLIENT_ORIGIN: $CLIENT_ORIGIN
+          login:
+            function: actions/login/index.js
+            web: 'yes'
+            runtime: 'nodejs:18'
+            annotations:
+              require-adobe-auth: false
+            inputs:
+              ADOBE_COMMERCE_BASE_URL: $ADOBE_COMMERCE_BASE_URL
+              ADOBE_COMMERCE_REST_PREFIX: $ADOBE_COMMERCE_REST_PREFIX
+              SESSION_SECRET: $SESSION_SECRET
+              COMMERCE_TOKEN_ENC_KEY: $COMMERCE_TOKEN_ENC_KEY
+              SESSION_IDLE_TIMEOUT_MINUTES: $SESSION_IDLE_TIMEOUT_MINUTES
+              CLIENT_ORIGIN: $CLIENT_ORIGIN
+          logout:
+            function: actions/logout/index.js
+            web: 'yes'
+            runtime: 'nodejs:18'
+            annotations:
+              require-adobe-auth: false
+            inputs:
+              SESSION_SECRET: $SESSION_SECRET
+              CLIENT_ORIGIN: $CLIENT_ORIGIN
+          me:
+            function: actions/me/index.js
+            web: 'yes'
+            runtime: 'nodejs:18'
+            annotations:
+              require-adobe-auth: false
+            inputs:
+              ADOBE_COMMERCE_BASE_URL: $ADOBE_COMMERCE_BASE_URL
+              SESSION_SECRET: $SESSION_SECRET
+              COMMERCE_TOKEN_ENC_KEY: $COMMERCE_TOKEN_ENC_KEY
+              SESSION_IDLE_TIMEOUT_MINUTES: $SESSION_IDLE_TIMEOUT_MINUTES
+              CLIENT_ORIGIN: $CLIENT_ORIGIN
