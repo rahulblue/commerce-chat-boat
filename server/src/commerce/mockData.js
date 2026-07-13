@@ -58,3 +58,79 @@ export const mockTopProducts = [
   { sku: "STKM2000400", name: "One Touch 2TB", qtySold: 64, revenue: 7679.36 },
   { sku: "STKZ5000400", name: "FireCuda Gaming Drive 5TB", qtySold: 41, revenue: 6149.59 },
 ];
+
+export const mockProducts = [
+  {
+    sku: "STKP14000400",
+    name: "Expansion Portable 4TB",
+    price: 129.99,
+    status: "enabled",
+    typeId: "simple",
+    qty: 342,
+  },
+  {
+    sku: "STGX1000400",
+    name: "Expansion Portable 1TB",
+    price: 64.99,
+    status: "enabled",
+    typeId: "simple",
+    qty: 511,
+  },
+];
+
+export const mockCustomers = [
+  {
+    email: "alex.carter@example.com",
+    firstName: "Alex",
+    lastName: "Carter",
+    groupId: 1,
+    createdAt: "2025-01-14",
+  },
+  {
+    email: "morgan.lee@example.com",
+    firstName: "Morgan",
+    lastName: "Lee",
+    groupId: 1,
+    createdAt: "2025-03-02",
+  },
+];
+
+export const mockInvoices = [
+  {
+    orderIncrementId: "100000123",
+    invoiceId: "900000201",
+    grandTotal: 649.99,
+    state: "paid",
+    createdAt: "2026-05-25",
+  },
+];
+
+export const mockCreditMemos = [
+  {
+    orderIncrementId: "100000124",
+    creditMemoId: "700000101",
+    grandTotal: 229.99,
+    state: "refunded",
+    createdAt: "2026-05-27",
+  },
+];
+
+export const mockStoreConfig = {
+  baseUrl: "https://staging.example.com/",
+  baseCurrencyCode: "USD",
+  defaultDisplayCurrencyCode: "USD",
+  timezone: "America/Los_Angeles",
+  locale: "en_US",
+};
+
+export const mockIngramConfiguration = {
+  reportEnabled: true,
+  missingIngramNumberReportEnabled: true,
+  duplicatedIngramNumberReportEnabled: false,
+  reportFrequency: "daily",
+  stockReportWebsites: ["base"],
+  ingramBaseEnabled: true,
+  ingramSandbox: true,
+  ingramEndpoint: "https://api.ingrammicro.com:443/sandbox",
+  ingramCustomerNumber: "12345678",
+};

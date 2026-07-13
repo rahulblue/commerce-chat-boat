@@ -1,10 +1,11 @@
 const ORDER_ID_PATTERN = /\b(?:order\s*)?([0-9]{6,12})\b/i;
-const RMA_ID_PATTERN = /\b(?:rma|return)\s*#?\s*([a-z0-9-]{4,20})\b/i;
+const RMA_ID_PATTERN = /\b(?:rma|return)[\s#-]*([a-z0-9]{3,20})\b/gi;
+const SKU_PATTERN = /\b([A-Z]{2,8}[0-9]{3,10})\b/;
 
 export function routeIntent(question) {
   const normalized = question.toLowerCase();
   const orderId = question.match(ORDER_ID_PATTERN)?.[1];
-  const rmaId = question.match(RMA_ID_PATTERN)?.[1];
+  const rmaId = readRmaId(question);
   const customerName = readCustomerName(question);
 
   if (/\b(top|best)\b.*\b(selling|seller|products|skus)\b/.test(normalized)) {
@@ -22,6 +23,41 @@ export function routeIntent(question) {
       toolName: "salesSummary",
       args: {
         days: readDays(normalized, 30),
+      },
+    };
+  }
+
+  if (/\bingram\b/.test(normalized)) {
+    return {
+      toolName: "getIngramConfiguration",
+      args: {},
+    };
+  }
+
+  if (
+    /\b(store|site)\s*(config|configuration|settings)\b/.test(normalized) ||
+    /\b(base currency|display currency|store timezone|store locale|base url)\b/.test(normalized)
+  ) {
+    return {
+      toolName: "getStoreConfig",
+      args: {},
+    };
+  }
+
+  if (/\bcredit\s*memo(s)?\b/.test(normalized)) {
+    return {
+      toolName: "getCreditMemoStatus",
+      args: {
+        orderIncrementId: orderId,
+      },
+    };
+  }
+
+  if (/\binvoice(s)?\b/.test(normalized)) {
+    return {
+      toolName: "listInvoicesForOrder",
+      args: {
+        orderIncrementId: orderId,
       },
     };
   }
@@ -61,6 +97,35 @@ export function routeIntent(question) {
       toolName: "listOrders",
       args: {
         limit: readLimit(normalized, 10),
+      },
+    };
+  }
+
+  if (/\bcustomer\b/.test(normalized) && /\b(email|profile|details|info|account)\b/.test(normalized) && customerName) {
+    return {
+      toolName: "getCustomerDetails",
+      args: {
+        customerName,
+      },
+    };
+  }
+
+  const sku = question.match(SKU_PATTERN)?.[1];
+
+  if (sku && /\bproduct\b/.test(normalized)) {
+    return {
+      toolName: "getProductDetails",
+      args: {
+        sku,
+      },
+    };
+  }
+
+  if (/\b(search|find|look ?up)\b.*\bproduct(s)?\b/.test(normalized) && !customerName) {
+    return {
+      toolName: "searchProducts",
+      args: {
+        keyword: readProductKeyword(question),
       },
     };
   }
@@ -123,6 +188,16 @@ function readDays(normalized, fallback) {
 function readLimit(normalized, fallback) {
   const match = normalized.match(/\btop\s+(\d{1,2})\b/);
   return match ? Math.min(Number(match[1]), 20) : fallback;
+}
+
+function readRmaId(question) {
+  const match = [...question.matchAll(RMA_ID_PATTERN)].find(([, token]) => /\d/.test(token));
+  return match ? `RMA-${match[1]}` : null;
+}
+
+function readProductKeyword(question) {
+  const match = question.match(/\b(?:search|find|look ?up)\b.*?\bproduct(?:s)?\b\s*(?:for|named|called)?\s*(.+)$/i);
+  return match?.[1]?.trim().replace(/[?.!]+$/, "") || null;
 }
 
 function readCustomerName(question) {
