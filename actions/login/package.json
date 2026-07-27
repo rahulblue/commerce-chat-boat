@@ -1,8 +1,0 @@
-{
-  "name": "commerce-admin-chatbot-login-action",
-  "version": "1.0.0",
-  "type": "module",
-  "dependencies": {
-    "@adobe/aio-lib-state": "^5.0.0"
-  }
-}

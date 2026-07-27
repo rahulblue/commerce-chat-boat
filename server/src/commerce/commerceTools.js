@@ -58,6 +58,7 @@ export async function runCommerceTool(toolName, args, context = {}) {
     ingramSyncIssues,
     customersByLocation,
     unsoldProducts,
+    listProductsByRegion,
     help: async () => ({ source: "system", data: {} }),
   };
 
@@ -817,6 +818,65 @@ async function getStockStatus({ sku }, context = {}) {
       return forbidden("Your Commerce account doesn't have permission to view product/stock data.");
     }
     return missing(`No product found for SKU ${sku}.`);
+  }
+}
+
+// Bulk region/website product listing — the catalog here is small (~150 products), so a
+// full scan is cheap. Distinct from getStockStatus, which is a single-SKU lookup.
+async function listProductsByRegion({ region, status, limit = 20 }, context = {}) {
+  const term = String(region || "").trim();
+
+  if (!term) {
+    return missing("Please provide a region or website name, e.g. US, CA, DE, FR, UK, or B2B.");
+  }
+
+  if (!hasAdobeCommerceConfig()) {
+    return missing("Product region listing requires live Adobe Commerce access, which isn't configured yet.");
+  }
+
+  const safeLimit = clamp(Number(limit), 1, MAX_LIMIT * 5);
+
+  try {
+    const [payload, websiteMap] = await Promise.all([
+      fetchAdobeCommerceJson(`${commerceRestPath("/products")}?searchCriteria[pageSize]=200`, {
+        token: context.token,
+      }),
+      getWebsiteRegionMap(context),
+    ]);
+
+    const products = payload.items || [];
+    const normalizedRegion = term.toLowerCase();
+    const normalizedStatus = status ? String(status).toLowerCase() : null;
+
+    const matches = products.filter((product) => {
+      if (normalizedStatus === "enabled" && product.status !== 1) return false;
+      if (normalizedStatus === "disabled" && product.status === 1) return false;
+
+      const websiteIds = product.extension_attributes?.website_ids || [];
+      return websiteIds.some((id) => String(websiteMap.get(id) || "").toLowerCase().includes(normalizedRegion));
+    });
+
+    return {
+      source: "adobe-commerce-rest",
+      data: {
+        region: term,
+        totalCatalogProducts: products.length,
+        matchingCount: matches.length,
+        capped: matches.length > safeLimit,
+        products: matches.slice(0, safeLimit).map((product) => ({
+          sku: product.sku,
+          name: product.name,
+          status: product.status === 1 ? "enabled" : "disabled",
+          typeId: product.type_id,
+          price: Number(product.price || 0).toFixed(2),
+        })),
+      },
+    };
+  } catch (error) {
+    if (error.status === 401 || error.status === 403) {
+      return forbidden("Your Commerce account doesn't have permission to view product data.");
+    }
+    return missing(`Product region listing failed: ${error.message}`);
   }
 }
 

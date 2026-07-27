@@ -95,6 +95,9 @@ The AI does not receive database credentials and does not generate SQL.
 - Store configuration (base currency, display currency, timezone, locale, base URL)
 - Ingram / Ingram Micro configuration (requires the `/V1/seagate/chatbot/ingram-configuration` Commerce endpoint to be deployed; falls back to a "not connected yet" message otherwise)
 - `queryCommerceApi`: catch-all for read-only Commerce data not covered above (promotions/cart price rules, coupons, customer groups, categories, etc.), restricted to an endpoint allowlist in `server/src/commerce/commerceTools.js` (`ALLOWED_QUERY_ENDPOINT_PREFIXES`)
+- `dailySalesTrend`, `salesBreakdown` (by category/brand/payment method), `customerActivitySummary` (new vs. returning), `unsoldProducts`, `listProductsByRegion` (full-catalog scan by website/region — this catalog is small, ~150 products)
+- `catalogQualityReport`: full-catalog scan for disabled products, missing images/descriptions/categories
+- `getIngramOrderStatus` / `ingramSyncIssues`: Ingram fulfillment sync tracking, mined from order status-history comments
 
 All tools fall back to mock data (or a clear "not connected" message) when Adobe Commerce isn't configured or a specific endpoint isn't deployed yet.
 

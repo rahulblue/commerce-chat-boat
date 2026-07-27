@@ -1,19 +1,8 @@
-import { Bot, Loader2, LogOut, Send, UserRound } from "lucide-react";
-import React, { useEffect, useMemo, useState } from "react";
+import { Bot, Loader2, Send, UserRound } from "lucide-react";
+import React, { useMemo, useState } from "react";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
-// Local Express dev server uses clean REST paths under API_BASE. Deployed Adobe I/O Runtime
-// actions each have their own flat URL (no shared base path structure), so every endpoint
-// has its own override var — set these to the real action URLs after the first `aio app deploy`.
 const CHAT_URL = import.meta.env.VITE_CHAT_API_URL || `${API_BASE}/api/chat`;
-const HEALTH_URL = import.meta.env.VITE_HEALTH_URL || `${API_BASE}/api/health`;
-const ME_URL = import.meta.env.VITE_ME_URL || `${API_BASE}/api/auth/me`;
-const LOGIN_URL = import.meta.env.VITE_LOGIN_URL || `${API_BASE}/api/auth/login`;
-const LOGOUT_URL = import.meta.env.VITE_LOGOUT_URL || `${API_BASE}/api/auth/logout`;
-const CHAT_HISTORY_URL = import.meta.env.VITE_CHAT_HISTORY_URL || `${API_BASE}/api/chat/history`;
-// Set VITE_AUTH_REQUIRED=true for the App Builder client build — Commerce is always configured
-// there, so skip the /api/health probe entirely rather than depend on a 6th action for it.
-const FORCE_AUTH_REQUIRED = import.meta.env.VITE_AUTH_REQUIRED === "true";
 
 const suggestedQuestions = [
   "Show recent orders",
@@ -24,119 +13,19 @@ const suggestedQuestions = [
   "Show top 5 selling products last month",
 ];
 
-const defaultGreeting = {
-  role: "assistant",
-  content:
-    "Ask about orders, shipments, returns, top-selling products, or sales summaries. I will answer from approved commerce tools.",
-};
-
 export default function App() {
-  const [authState, setAuthState] = useState("checking");
-  const [username, setUsername] = useState(null);
-  const [loginForm, setLoginForm] = useState({ username: "", password: "" });
-  const [loginError, setLoginError] = useState(null);
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-
-  const [messages, setMessages] = useState([defaultGreeting]);
+  const [messages, setMessages] = useState([
+    {
+      role: "assistant",
+      content:
+        "Ask about orders, shipments, returns, top-selling products, or sales summaries. I will answer from approved commerce tools.",
+    },
+  ]);
   const [question, setQuestion] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [lastToolCalls, setLastToolCalls] = useState(null);
 
   const canSend = useMemo(() => question.trim().length > 0 && !isLoading, [question, isLoading]);
-
-  useEffect(() => {
-    checkAuth();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  async function checkAuth() {
-    try {
-      if (!FORCE_AUTH_REQUIRED) {
-        const healthRes = await fetch(HEALTH_URL);
-        const health = await healthRes.json();
-
-        if (!health.authRequired) {
-          setAuthState("anonymous");
-          return;
-        }
-      }
-
-      const meRes = await fetch(ME_URL, { credentials: "include" });
-
-      if (!meRes.ok) {
-        setAuthState("needs-login");
-        return;
-      }
-
-      const me = await meRes.json();
-      setUsername(me.username);
-      await loadHistory();
-      setAuthState("authenticated");
-    } catch (error) {
-      setAuthState("needs-login");
-    }
-  }
-
-  async function loadHistory() {
-    try {
-      const res = await fetch(CHAT_HISTORY_URL, { credentials: "include" });
-
-      if (!res.ok) {
-        return;
-      }
-
-      const { messages: history } = await res.json();
-
-      if (history?.length) {
-        setMessages(history.map((item) => ({ role: item.role, content: item.content })));
-      }
-    } catch (error) {
-      // Keep the default greeting if history can't be loaded.
-    }
-  }
-
-  async function handleLogin(event) {
-    event.preventDefault();
-    setLoginError(null);
-    setIsLoggingIn(true);
-
-    try {
-      const res = await fetch(LOGIN_URL, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(loginForm),
-      });
-      const payload = await res.json();
-
-      if (!res.ok) {
-        setLoginError(payload.error || "Login failed.");
-        return;
-      }
-
-      setUsername(payload.username);
-      setLoginForm({ username: "", password: "" });
-      await loadHistory();
-      setAuthState("authenticated");
-    } catch (error) {
-      setLoginError("Could not reach the server. Please try again.");
-    } finally {
-      setIsLoggingIn(false);
-    }
-  }
-
-  async function handleLogout() {
-    try {
-      await fetch(LOGOUT_URL, { method: "POST", credentials: "include" });
-    } catch (error) {
-      // Clear local state regardless of network failure.
-    }
-
-    setUsername(null);
-    setMessages([defaultGreeting]);
-    setLastToolCalls(null);
-    setAuthState("needs-login");
-  }
 
   async function submitQuestion(nextQuestion = question) {
     const trimmed = nextQuestion.trim();
@@ -154,7 +43,6 @@ export default function App() {
     try {
       const response = await fetch(CHAT_URL, {
         method: "POST",
-        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -163,12 +51,6 @@ export default function App() {
           history: nextMessages,
         }),
       });
-
-      if (response.status === 401) {
-        setAuthState("needs-login");
-        setMessages([defaultGreeting]);
-        return;
-      }
 
       const payload = await response.json();
 
@@ -191,53 +73,6 @@ export default function App() {
     }
   }
 
-  if (authState === "checking") {
-    return (
-      <main className="app-shell centered">
-        <Loader2 size={24} className="spin" />
-      </main>
-    );
-  }
-
-  if (authState === "needs-login") {
-    return (
-      <main className="app-shell centered">
-        <form className="login-card" onSubmit={handleLogin}>
-          <p className="eyebrow">Operations Assistant</p>
-          <h1>Commerce Admin Chatbot</h1>
-          <p className="login-subtitle">Sign in with your Adobe Commerce admin account.</p>
-
-          <label>
-            Username
-            <input
-              value={loginForm.username}
-              onChange={(event) => setLoginForm((form) => ({ ...form, username: event.target.value }))}
-              autoComplete="username"
-              required
-            />
-          </label>
-
-          <label>
-            Password
-            <input
-              type="password"
-              value={loginForm.password}
-              onChange={(event) => setLoginForm((form) => ({ ...form, password: event.target.value }))}
-              autoComplete="current-password"
-              required
-            />
-          </label>
-
-          {loginError && <p className="login-error">{loginError}</p>}
-
-          <button type="submit" disabled={isLoggingIn}>
-            {isLoggingIn ? "Signing in..." : "Sign in"}
-          </button>
-        </form>
-      </main>
-    );
-  }
-
   return (
     <main className="app-shell">
       <aside className="sidebar">
@@ -245,16 +80,6 @@ export default function App() {
           <p className="eyebrow">Operations Assistant</p>
           <h1>Commerce Admin Chatbot</h1>
         </div>
-
-        {username && (
-          <section className="tool-panel" aria-label="Account">
-            <h2>Signed in as</h2>
-            <p className="tool-name">{username}</p>
-            <button type="button" className="logout-button" onClick={handleLogout}>
-              <LogOut size={14} /> Log out
-            </button>
-          </section>
-        )}
 
         <section className="tool-panel" aria-label="Available topics">
           <h2>Available Topics</h2>
